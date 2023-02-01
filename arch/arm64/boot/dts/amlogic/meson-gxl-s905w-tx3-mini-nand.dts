@@ -141,38 +141,7 @@
 };
 
 &pinctrl_periphs {
-	nand_dqs_pins: nand_dqs_pins {
-		mux {
-			groups = "emmc_nand_d0",
-				"emmc_nand_d1",
-				"emmc_nand_d2",
-				"emmc_nand_d3",
-				"emmc_nand_d4",
-				"emmc_nand_d5",
-				"emmc_nand_d6",
-				"emmc_nand_d7",
-				"nand_dqs";
-			function = "nand";
-			bias-pull-down;
-		};
-	};
-
 	nand_pins: nand_pins {
-		mux-0 {
-			groups = "nand_ce0",
-				"nand_rb0";
-			function = "nand";
-			bias-pull-up;
-		};
-
-		mux-1 {
-			groups = "nand_wen_clk";
-			function = "nand";
-			bias-disable;
-		};
-	};
-
-	all_nand_pins: all_nand_pins {
 		mux {
 			groups = "emmc_nand_d0",
 				"emmc_nand_d1",
@@ -191,43 +160,63 @@
 				"nand_ren_wr",
 				"nand_dqs";
 			function = "nand";
-			input-enable;
-		};
-	};
-
-	nand_cs_pins: nand_cs {
-		mux {
-			groups = "nand_ce0",
-				"nand_ce1";
-			function = "nand";
 		};
 	};
 };
 
 &apb {
-	mtd_nand: nand@78000 {
+	mtd_nand: nand@74800 {
 		compatible = "amlogic,meson-gxl-nfc";
-		reg = <0x0 0x78000 0x0 0x100>, <0x0 0x74000 0x0 0x800>;
+		reg = <0x0 0x74800 0x0 0x100>, <0x0 0x74000 0x0 0x800>;
 		reg-name = "nfc", "emmc";
 		#address-cells = <1>;
 		#size-cells = <0>;
 		interrupts = <GIC_SPI 34 IRQ_TYPE_EDGE_RISING>;
 		status = "okay";
-
-		clocks = <&clkc CLKID_SD_EMMC_C>, <&clkc CLKID_FCLK_DIV2>;
-		clock-names = "core", "device";
+		clocks = <&clkc CLKID_SD_EMMC_C>, <&clkc CLKID_SD_EMMC_C_CLK0>, <&clkc CLKID_FCLK_DIV2>;
+		clock-names = "core", "clkin0", "clkin1";
 
 		pinctrl-names = "default";
-		pinctrl-0 = <&all_nand_pins>;
-		pinctrl-1 = <&all_nand_pins>;
-		pinctrl-2 = <&nand_cs_pins>;
+		pinctrl-0 = <&nand_pins>;
 
-		nand@0 {
+		nand0@0 {
 			reg = <0>;
 			#address-cells = <1>;
 			#size-cells = <1>;
 
 			nand-on-flash-bbt;
+			nand-ecc-mode = "hw";
+			nand-ecc-strength = <8>;
+			nand-ecc-step-size = <1024>;
+
+			meson-nand-user-mode = <2>;
+			meson-nand-ran-mode = <1>;
+
+			boot@0 {
+				label = "boot";
+				reg = <0x00000000 0x00200000>;
+				read-only;
+			};
+
+			env@200000 {
+				label = "env";
+				reg = <0x00200000 0x00400000>;
+			};
+
+			system@600000 {
+				label = "system";
+				reg = <0x00600000 0x00a00000>;
+			};
+
+			rootfs@1000000 {
+				label = "rootfs";
+				reg = <0x01000000 0x03000000>;
+			};
+
+			media@4000000 {
+				label = "media";
+				reg = <0x04000000 0x8000000>;
+			};
 		};
 	};
 };
